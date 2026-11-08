@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Reservasi Kamar</title>
+  <style>
+  body { font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto;
+         padding: 16px; background: #eef2f5; color: #1b2a35; }
+  h1 { margin-bottom: 8px; }
+  nav { margin-bottom: 16px; }
+  nav button { padding: 10px 16px; margin-right: 6px; border: 1px solid #0f6b8f;
+               background: #fff; color: #0f6b8f; border-radius: 6px;
+               cursor: pointer; font-size: 1rem; }
+  nav button:hover { background: #0f6b8f; color: #fff; }
+  section { background: #fff; border: 1px solid #d3dce3; border-radius: 10px;
+            padding: 18px; }
+  label { display: block; margin-bottom: 10px; font-weight: bold; }
+  input, select { display: block; margin-top: 4px; padding: 8px; width: 100%;
+                  max-width: 320px; border: 1px solid #b8c4cd;
+                  border-radius: 6px; font-size: 1rem; }
+  section button { padding: 8px 14px; border: 0; border-radius: 6px;
+                   background: #0f6b8f; color: #fff; cursor: pointer;
+                   font-size: 1rem; }
+  table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+  th, td { border: 1px solid #d3dce3; padding: 8px; text-align: left;
+           vertical-align: top; }
+  th { background: #e3ebf0; }
+  p[id^="pesan"] { font-weight: bold; color: #0f4c66; }
+</style>
+</head>
+<body>
+  <h1>Reservasi Kamar Penginapan</h1>
+
+  <nav>
+    <button onclick="tampilkan('cek')">Cek &amp; Pesan</button>
+    <button onclick="tampilkan('pesanan')">Daftar Pemesanan</button>
+    <button onclick="tampilkan('kamar')">Data Kamar</button>
+  </nav>
+
+  <section id="cek">
+  <h2>Cek ketersediaan</h2>
+  <label>Check-in <input id="in-ci" type="date"></label><br>
+  <label>Check-out <input id="in-co" type="date"></label><br>
+  <label>Jumlah tamu <input id="in-tamu" type="number" value="1"></label><br>
+  <button onclick="cekKetersediaan()">Cek ketersediaan</button>
+  <p id="pesan-cek"></p>
+  <ul id="hasil-cek"></ul>
+  <div id="form-pesan" hidden>
+  <h3 id="judul-pesan"></h3>
+  <label>Nama tamu <input id="in-nama"></label><br>
+  <label>Nomor telepon <input id="in-telp"></label><br>
+  <button onclick="buatPesanan()">Simpan reservasi</button>
+  <p id="pesan-form"></p>
+</div>
+</section>
+  <section id="pesanan" hidden>
+  <h2>Daftar pemesanan</h2>
+  <label>Cari nama atau kode <input id="in-cari" oninput="tampilkanPesanan()"></label><br>
+  <label>Status
+    <select id="in-status" onchange="tampilkanPesanan()">
+      <option value="">Semua</option>
+      <option>Aktif</option>
+      <option>Dibatalkan</option>
+    </select>
+  </label>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr><th>Kode</th><th>Tamu</th><th>Kamar</th><th>Tanggal</th><th>Total</th><th>Status</th><th>Aksi</th></tr>
+    </thead>
+    <tbody id="isi-pesanan"></tbody>
+  </table>
+    <div id="form-ubah" hidden>
+    <h3 id="judul-ubah"></h3>
+    <label>Check-in baru <input id="in-ubah-ci" type="date"></label><br>
+    <label>Check-out baru <input id="in-ubah-co" type="date"></label><br>
+    <button onclick="simpanUbah()">Simpan perubahan</button>
+    <button onclick="document.getElementById('form-ubah').hidden = true">Tutup</button>
+    <p id="pesan-ubah"></p>
+  </div>
+</section>
+  <section id="kamar" hidden>
+  <h2>Tambah kamar</h2>
+  <label>Nomor kamar <input id="in-no"></label><br>
+  <label>Tipe
+    <select id="in-tipe">
+      <option>Standar</option>
+      <option>Deluxe</option>
+      <option>Suite</option>
+    </select>
+  </label><br>
+  <label>Harga per malam (Rp) <input id="in-harga" type="number"></label><br>
+  <label>Kapasitas (1-10) <input id="in-kap" type="number"></label><br>
+  <button onclick="tambahKamar()">Tambah kamar</button>
+  <p id="pesan-kamar"></p>
+
+  <h2>Daftar kamar</h2>
+  <ul id="daftar-kamar"></ul>
+</section>
+
+  <script>
+    var KUNCI = "kamar-v1";
+    var daftarKamar = [];
+
+    function simpan() {
+      localStorage.setItem(KUNCI, JSON.stringify(daftarKamar));
+    }
+
+    function muat() {
+      var teks = localStorage.getItem(KUNCI);
+      if (teks) {
+        daftarKamar = JSON.parse(teks);
+      } else {
+        daftarKamar = [
+          { no: "101", tipe: "Standar", harga: 250000, kap: 2 },
+          { no: "201", tipe: "Deluxe", harga: 400000, kap: 3 }
+        ];
+        simpan();
+      }
+    }
+
+    function tampilkanKamar() {
+      var html = "";
+      for (var i = 0; i < daftarKamar.length; i++) {
+        var k = daftarKamar[i];
+        html += "<li>Kamar " + k.no + " (" + k.tipe + "), kapasitas " +
+                k.kap + " tamu, Rp" + k.harga + " per malam</li>";
+      }
+      document.getElementById("daftar-kamar").innerHTML = html;
+    }
+
+    function tampilkan(nama) {
+      document.getElementById("cek").hidden = true;
+      document.getElementById("pesanan").hidden = true;
+      document.getElementById("kamar").hidden = true;
+      document.getElementById(nama).hidden = false;
+        if (nama === "pesanan") {
+    tampilkanPesanan();
+  }
+    }
+
+    function tambahKamar() {
+  var no = document.getElementById("in-no").value.trim();
+  var tipe = document.getElementById("in-tipe").value;
+  var harga = document.getElementById("in-harga").value;
+  var kap = document.getElementById("in-kap").value;
+  var pesan = document.getElementById("pesan-kamar");
+
+
+  if (no === "") {
+    pesan.textContent = "Nomor kamar wajib diisi.";
+    return;
+  }
+  for (var i = 0; i < daftarKamar.length; i++) {
+    if (daftarKamar[i].no === no) {
+      pesan.textContent = "Nomor kamar " + no + " sudah ada.";
+      return;
+    }
+  }
+  if (harga === "") {
+    pesan.textContent = "Harga wajib diisi.";
+    return;
+  }
+  if (Number(harga) <= 0) {
+    pesan.textContent = "Harga harus lebih dari 0.";
+    return;
+  }
+  if (kap === "") {
+    pesan.textContent = "Kapasitas wajib diisi.";
+    return;
+  }
+  if (!Number.isInteger(Number(kap)) || Number(kap) < 1 || Number(kap) > 10) {
+    pesan.textContent = "Kapasitas harus bilangan bulat 1 sampai 10.";
+    return;
+  }
+
+  daftarKamar.push({ no: no, tipe: tipe, harga: Number(harga), kap: Number(kap) });
+  simpan();
+  tampilkanKamar();
+  pesan.textContent = "Kamar " + no + " berhasil ditambahkan.";
+
+  document.getElementById("in-no").value = "";
+  document.getElementById("in-harga").value = "";
+  document.getElementById("in-kap").value = "";
+}
+var daftarPesanan = [];
+
+function simpanPesanan() {
+  localStorage.setItem("pesanan-v1", JSON.stringify(daftarPesanan));
+}
+
+function muatPesanan() {
+  var teks = localStorage.getItem("pesanan-v1");
+  if (teks) {
+    daftarPesanan = JSON.parse(teks);
+  }
+}
+
+function hariIni() {
+  var d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+
+function hitungMalam(masuk, keluar) {
+  return Math.round((Date.parse(keluar) - Date.parse(masuk)) / 86400000);
+}
+
+function bentrok(noKamar, masuk, keluar, abaikanId) {
+  for (var i = 0; i < daftarPesanan.length; i++) {
+    var p = daftarPesanan[i];
+    if (abaikanId && p.id === abaikanId) {
+      continue;
+    }
+    if (p.status === "Aktif" && p.kamar === noKamar &&
+        masuk < p.co && p.ci < keluar) {
+      return p;
+    }
+  }
+  return null;
+}
+
+function cekKetersediaan() {
+  var ci = document.getElementById("in-ci").value;
+  var co = document.getElementById("in-co").value;
+  var tamu = document.getElementById("in-tamu").value;
+  var pesan = document.getElementById("pesan-cek");
+  var hasil = document.getElementById("hasil-cek");
+  hasil.innerHTML = "";
+
+  if (ci === "" || co === "") {
+    pesan.textContent = "Tanggal check-in dan check-out wajib diisi.";
+    return;
+  }
+  if (ci < hariIni()) {
+    pesan.textContent = "Check-in tidak boleh sebelum hari ini.";
+    return;
+  }
+  var malam = hitungMalam(ci, co);
+  if (malam < 1) {
+    pesan.textContent = "Check-out harus setelah check-in (minimal 1 malam).";
+    return;
+  }
+  if (malam > 30) {
+    pesan.textContent = "Lama menginap maksimal 30 malam.";
+    return;
+  }
+  if (tamu === "" || !Number.isInteger(Number(tamu)) || Number(tamu) < 1) {
+    pesan.textContent = "Jumlah tamu harus bilangan bulat minimal 1.";
+    return;
+  }
+  cekTerakhir = { ci: ci, co: co, tamu: Number(tamu), malam: malam };
+  document.getElementById("form-pesan").hidden = true;
+  var html = "";
+  var jumlah = 0;
+  for (var i = 0; i < daftarKamar.length; i++) {
+    var k = daftarKamar[i];
+    if (k.kap >= Number(tamu) && bentrok(k.no, ci, co) === null) {
+            html += "<li>Kamar " + k.no + " (" + k.tipe + "), kapasitas " + k.kap +
+              ", total " + malam + " malam: Rp" + (k.harga * malam) +
+              " <button onclick=\"pilihKamar('" + k.no + "')\">Pesan</button></li>";
+      jumlah++;
+    }
+  }
+  hasil.innerHTML = html;
+  if (jumlah === 0) {
+    pesan.textContent = "Tidak ada kamar tersedia. Coba ubah tanggal atau kurangi jumlah tamu.";
+  } else {
+    pesan.textContent = jumlah + " kamar tersedia untuk " + malam + " malam.";
+  }
+}
+var cekTerakhir = null;
+var kamarDipilih = "";
+
+function pilihKamar(no) {
+  kamarDipilih = no;
+  document.getElementById("judul-pesan").textContent = "Data tamu - kamar " + no;
+  document.getElementById("in-nama").value = "";
+  document.getElementById("in-telp").value = "";
+  document.getElementById("pesan-form").textContent = "";
+  document.getElementById("form-pesan").hidden = false;
+}
+
+function buatPesanan() {
+  var nama = document.getElementById("in-nama").value.trim();
+  var telp = document.getElementById("in-telp").value.trim().replace(/[\s-]/g, "");
+  var pesan = document.getElementById("pesan-form");
+
+  if (nama === "") {
+    pesan.textContent = "Nama tamu wajib diisi.";
+    return;
+  }
+  if (nama.length < 3 || nama.length > 50) {
+    pesan.textContent = "Nama harus 3 sampai 50 karakter.";
+    return;
+  }
+  if (telp === "") {
+    pesan.textContent = "Nomor telepon wajib diisi.";
+    return;
+  }
+  if (!/^\+?\d+$/.test(telp)) {
+    pesan.textContent = "Nomor telepon hanya boleh berisi angka (boleh diawali +).";
+    return;
+  }
+  var digit = telp.replace("+", "");
+  if (digit.length < 9 || digit.length > 15) {
+    pesan.textContent = "Nomor telepon harus 9 sampai 15 digit.";
+    return;
+  }
+
+  var b = bentrok(kamarDipilih, cekTerakhir.ci, cekTerakhir.co);
+  if (b !== null) {
+    pesan.textContent = "Kamar " + kamarDipilih + " sudah dipesan pada " +
+                        b.ci + " sampai " + b.co + ". Pilih kamar atau tanggal lain.";
+    return;
+  }
+
+  var harga = 0;
+  for (var i = 0; i < daftarKamar.length; i++) {
+    if (daftarKamar[i].no === kamarDipilih) {
+      harga = daftarKamar[i].harga;
+    }
+  }
+  var kode = "BK-" + String(daftarPesanan.length + 1).padStart(4, "0");
+  daftarPesanan.push({
+    id: kode, kode: kode, kamar: kamarDipilih, nama: nama, telp: telp,
+    ci: cekTerakhir.ci, co: cekTerakhir.co, tamu: cekTerakhir.tamu,
+    total: harga * cekTerakhir.malam, status: "Aktif"
+  });
+  simpanPesanan();
+
+  document.getElementById("form-pesan").hidden = true;
+  document.getElementById("hasil-cek").innerHTML = "";
+  document.getElementById("pesan-cek").textContent =
+    "Reservasi berhasil. Kode " + kode + ", kamar " + kamarDipilih +
+    ", total Rp" + (harga * cekTerakhir.malam) + ".";
+}
+function aman(teks) {
+  return String(teks).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function tampilkanPesanan() {
+  var kata = document.getElementById("in-cari").value.trim().toLowerCase();
+  var status = document.getElementById("in-status").value;
+  var html = "";
+  var jumlah = 0;
+
+  for (var i = 0; i < daftarPesanan.length; i++) {
+    var p = daftarPesanan[i];
+    var cocokStatus = (status === "" || p.status === status);
+    var cocokKata = (kata === "" ||
+                     p.nama.toLowerCase().indexOf(kata) > -1 ||
+                     p.kode.toLowerCase().indexOf(kata) > -1);
+    if (cocokStatus && cocokKata) {
+      html += "<tr><td>" + aman(p.kode) + "</td>" +
+              "<td>" + aman(p.nama) + "<br>" + aman(p.telp || "-") + "</td>" +
+              "<td>" + aman(p.kamar) + "</td>" +
+              "<td>" + p.ci + " s/d " + p.co + "<br>" + hitungMalam(p.ci, p.co) + " malam</td>" +
+              "<td>" + (p.total ? "Rp" + p.total : "-") + "</td>" +
+                            "<td>" + p.status + "</td>" +
+              "<td>" + (p.status === "Aktif"
+                ? "<button onclick=\"bukaUbah('" + p.id + "')\">Ubah tanggal</button> " +
+                  "<button onclick=\"batalkanPesanan('" + p.id + "')\">Batalkan</button>"
+                : "-") + "</td></tr>";
+      jumlah++;
+    }
+  }
+
+  if (jumlah === 0) {
+    html = '<tr><td colspan="7">' +
+           (daftarPesanan.length === 0 ? "Belum ada pemesanan." : "Tidak ada data yang cocok.") +
+           "</td></tr>";
+  }
+  document.getElementById("isi-pesanan").innerHTML = html;
+}
+var sedangDiubah = null;
+
+function bukaUbah(id) {
+  for (var i = 0; i < daftarPesanan.length; i++) {
+    if (daftarPesanan[i].id === id) {
+      sedangDiubah = daftarPesanan[i];
+    }
+  }
+  if (sedangDiubah === null) {
+    return;
+  }
+  document.getElementById("judul-ubah").textContent = "Ubah tanggal " + sedangDiubah.kode;
+  document.getElementById("in-ubah-ci").value = sedangDiubah.ci;
+  document.getElementById("in-ubah-co").value = sedangDiubah.co;
+  document.getElementById("pesan-ubah").textContent = "";
+  document.getElementById("form-ubah").hidden = false;
+}
+
+function simpanUbah() {
+  var ci = document.getElementById("in-ubah-ci").value;
+  var co = document.getElementById("in-ubah-co").value;
+  var pesan = document.getElementById("pesan-ubah");
+
+  if (ci === "" || co === "") {
+    pesan.textContent = "Kedua tanggal wajib diisi.";
+    return;
+  }
+  if (ci < hariIni()) {
+    pesan.textContent = "Check-in tidak boleh sebelum hari ini.";
+    return;
+  }
+  var malam = hitungMalam(ci, co);
+  if (malam < 1) {
+    pesan.textContent = "Check-out harus setelah check-in (minimal 1 malam).";
+    return;
+  }
+  if (malam > 30) {
+    pesan.textContent = "Lama menginap maksimal 30 malam.";
+    return;
+  }
+  var b = bentrok(sedangDiubah.kamar, ci, co, sedangDiubah.id);
+  if (b !== null) {
+    pesan.textContent = "Bentrok dengan reservasi " + b.kode + " (" + b.ci + " sampai " + b.co + "). Pilih tanggal lain.";
+    return;
+  }
+
+  var harga = 0;
+  for (var i = 0; i < daftarKamar.length; i++) {
+    if (daftarKamar[i].no === sedangDiubah.kamar) {
+      harga = daftarKamar[i].harga;
+    }
+  }
+  sedangDiubah.ci = ci;
+  sedangDiubah.co = co;
+  sedangDiubah.total = harga * malam;
+  simpanPesanan();
+  document.getElementById("form-ubah").hidden = true;
+  tampilkanPesanan();
+}
+
+function batalkanPesanan(id) {
+  for (var i = 0; i < daftarPesanan.length; i++) {
+    if (daftarPesanan[i].id === id) {
+      if (!confirm("Batalkan reservasi " + daftarPesanan[i].kode + " atas nama " + daftarPesanan[i].nama + "?")) {
+        return;
+      }
+      daftarPesanan[i].status = "Dibatalkan";
+      simpanPesanan();
+      tampilkanPesanan();
+      return;
+    }
+  }
+}
+    muat();
+    tampilkanKamar();
+    muat();
+muatPesanan();
+tampilkanKamar();
+  </script>
+</body>
+</html>
